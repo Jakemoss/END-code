@@ -1,0 +1,75 @@
+import rebound
+import numpy as np
+import math
+import random as rand
+import matplotlib.pyplot as plt
+from matplotlib import ticker,cm
+import matplotlib.colors as colors
+from scipy.stats import maxwell
+from math import sqrt
+
+vkick = 2.65e7
+G = 6.67259e-8
+m_sun = 2e33
+a0 = 3.085610*10**18
+mbh = m_sun*1e7
+a = np.logspace(-1,1,10)
+ecc = 1 - np.logspace(-3,0,10)
+ecc[-1]=1e-6
+# ecc = ecc[::-1]
+a_log = np.log10(a)
+ecc_log = np.log10(ecc)
+x=np.logspace(-1,1,10)
+y=np.logspace(-3,0,10)
+# y=y[::-1]
+x_log=np.log10(x)
+y_log=np.log10(y)
+delta_x=np.diff(x_log)[0]
+delta_y=np.diff(y_log)[0]
+
+def vcirc(a):
+	return sqrt(G*mbh/(a*a0))
+
+def cos_crit(a,e):
+	vc = vcirc(a)
+	return (1/(2*sqrt(2)))*(vc/vkick)*sqrt((1-e)/(1+e))-(1/(2*sqrt(2)))*(vkick/vc)*sqrt((1-e)/(1+e))
+
+p = 0
+
+def kickfrac(a,e):
+	cos = cos_crit(a,e)
+	if cos >= -1 and cos <= 1:
+		p = 100*(1-cos)/2
+	elif cos > 1:
+		p = 0
+	else:
+		p = 100
+	return p
+
+kick_arr = np.zeros([len(x),len(y)])
+
+
+
+x_ords=np.append(x_log-delta_x/2.0,x_log[-1]+delta_x/2.0)
+y_ords=np.append(y_log-delta_y/2.0,y_log[-1]+delta_y/2.0)
+
+fig,ax=plt.subplots(figsize=(10,9))
+print(range(len(y)))
+for i in range(len(x)):
+	for j in range(len(y)):
+		plt.text(x_log[i], y_log[j], '{0:.0f}'.format(kickfrac(a[i],ecc[j])), fontsize=10, horizontalalignment='center')
+		kick_arr[i,j] = kickfrac(a[i],ecc[j])
+		print(i,j,kick_arr[i,j])
+
+cmap=cm.get_cmap('Blues')
+cmap.set_under('white')
+
+# print(x_ords)
+# print(y_ords)
+# print(kick_arr)
+p1=ax.pcolormesh(x_ords, y_ords, np.transpose(kick_arr), cmap=cmap, norm=colors.Normalize(vmin=1, vmax=100))
+cbar=fig.colorbar(p1, ax=ax, label=r'Kick Fraction', extend='both')
+# p1=ax.pcolormesh(x_ords, y_ords, np.transpose(p), cmap=cmap, norm=colors.Normalize(vmin=1, vmax=100))
+
+
+fig.savefig("AnalyticTestPari.pdf")
