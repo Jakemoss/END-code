@@ -1,0 +1,76 @@
+#Created by Jake Moss
+
+#This program gives a star/compact object orbiting around an END a random kick from a    maxwellian distribution
+
+import rebound
+import numpy as np
+import math
+import random as rand
+import matplotlib.pyplot as plt
+from scipy.stats import maxwell
+
+
+m_sun=2e33
+
+def generate_kick():
+    vmag = maxwell.rvs(loc=0, scale=2.65e7)
+    phi = rand.uniform(0.,2*np.pi)
+    theta = math.acos(rand.uniform(-1,1))
+    vx = vmag*math.cos(phi)*math.sin(theta)
+    vy = vmag*math.sin(phi)*math.sin(theta)
+    vz = vmag*math.cos(theta)
+    v_vec = np.array([vx,vy,vz])
+    return v_vec
+    #need to make an array of v-kick in spherical coordinates
+    #convert to cartesian
+    #then return the kick array in cartesian coord
+parsec = 3.086e18
+
+sim=rebound.Simulation()
+sim.G=6.67259e-8
+sim.add (m=m_sun*1e7)
+#Ms=np.linspace(0 , 2*np.pi , 5)
+#Ms=Ms[:-1]
+ejected=np.zeros([10,10])
+error=np.zeros([10,10])
+
+trials=1000
+smaxs=np.logspace(-1,1,10)
+eccs=1 - np.logspace(-3,0,10)
+eccs=eccs[::-1]
+#print eccs
+##Loop here
+#M=np.linspace(0, 2*np.pi, 100)
+##for MM in M:
+##  sim.add(e=.001, a= parsec, m=m_sun, M=MM, primary=sim.particles[0])
+##Loop over a/loop over e/loop over trial index
+##for smas
+##  for es
+##      open file for append
+##      for dummy
+#for ii,MM in enumerate(Ms):
+for ii,smax in enumerate(smaxs):
+    for jj,ecc in enumerate(eccs):
+        sim.add(e=ecc, a= smax*parsec, m=m_sun, primary=sim.particles[0], M=0)
+        sim.move_to_com()
+        x0 = np.array(sim.particles[1].xyz)
+        v0 = np.array(sim.particles[1].vxyz)
+        sim.remove(1)
+        smas = np.ones(trials)
+        for kk in range(trials):
+            vv = generate_kick()
+            vnew = v0 + vv
+            sim.add(x=x0[0],y=x0[1],z=x0[2],vx=vnew[0],vy=vnew[1],vz=vnew[2])
+            #smas[i]=sim.particles[i].a
+            orbits=sim.calculate_orbits(primary=sim.particles[0])
+            smas[kk]=orbits[-1].a
+            sim.remove(1)
+        ejected[ii,jj]=(float(len(smas[smas<0]))/trials)*100
+        ##Add loop to calculate std deviation
+        frac1=np.empty(trials/100)
+        for ell in range(trials/100):
+            tmp=smas[ell*100:(ell+1)*100]
+            frac1[ell]=(float(len(tmp[tmp<0]))/100)*100
+        error[ii, jj]=np.std(frac1)
+np.savetxt("velocityKickGridPlotPari2",ejected)
+np.savetxt("velocityKickGridErrorPari2",error)
