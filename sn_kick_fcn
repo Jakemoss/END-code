@@ -1,0 +1,30 @@
+import rebound
+import numpy as np
+import math
+import random as rand
+
+
+
+parsec = 3.086e18
+m_sun = 2e33
+sim=rebound.Simulation()
+sim.G=6.67259e-8
+sim.add (m=m_sun*1e7)
+
+def generate_kick():
+    vmag = maxwell.rvs(loc=0, scale=2.65e7)
+    phi = rand.uniform(0.,2*np.pi)
+    theta = math.acos(rand.uniform(-1,1))
+    vx = vmag*math.cos(phi)*math.sin(theta)
+    vy = vmag*math.sin(phi)*math.sin(theta)
+    vz = vmag*math.cos(theta)
+    v_vec = np.array([vx,vy,vz])
+    return v_vec
+
+def newOrb(particle):
+    v_kick = generate_kick()
+    x0 = np.array(particle.xyz)
+    v0 = np.array(particle.vxyz)
+    vnew = v0 + v_kick
+    particle.vxyz = vnew
+    return particle
